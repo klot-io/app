@@ -15,7 +15,9 @@ setup(
         'SQLAlchemy-JSONField==0.7.1',
         'flask_jsontools==0.1.1-0',
         'requests==2.22',
-        'opengui @ git+https://github.com/gaf3/opengui.git@v0.5#egg=opengui',
         'coverage==4.5.1'
+    ],
+    dependency_links=[
+        'opengui @ git+https://github.com/gaf3/opengui.git@v0.5#egg=opengui'
     ]
 )
