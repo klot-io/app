@@ -11,6 +11,7 @@ setup(
         'flask_restful==0.3.7',
         'PyYAML==5.1',
         'PyMySQL==0.9.3',
+        'redis==2.10.6',
         'SQLAlchemy==1.3.0',
         'SQLAlchemy-JSONField==0.7.1',
         'flask_jsontools==0.1.1-0',
