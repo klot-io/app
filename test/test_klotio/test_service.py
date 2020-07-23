@@ -16,20 +16,6 @@ import sqlalchemy.exc
 import klotio.service
 
 
-class MockRedis(object):
-
-    def __init__(self):
-
-        self.channel = None
-
-        self.messages = []
-
-    def publish(self, channel, message):
-
-        self.channel = channel
-        self.messages.append(message)
-
-
 class Group(klotio.service.Group):
     APP = "unittest.klot.io"
 
@@ -63,7 +49,7 @@ class TestRest(klotio.unittest.TestCase):
 
         cls.app.mysql = test_klotio.test_mysql.MySQL()
 
-        cls.app.redis = MockRedis()
+        cls.app.redis = klotio.unittest.MockRedis("redis.com", 567)
         cls.app.channel = "zee"
 
         api = flask_restful.Api(cls.app)

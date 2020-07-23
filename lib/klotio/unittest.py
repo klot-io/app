@@ -1,5 +1,20 @@
 import unittest
 
+class MockRedis(object):
+
+    def __init__(self, host, port):
+
+        self.host = host
+        self.port = port
+        self.channel = None
+
+        self.messages = []
+
+    def publish(self, channel, message):
+
+        self.channel = channel
+        self.messages.append(message)
+
 class TestCase(unittest.TestCase):
 
     maxDiff = None
