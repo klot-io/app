@@ -5,14 +5,14 @@ import sqlalchemy
 import sqlalchemy.ext.mutable
 import sqlalchemy_jsonfield
 
-import klotio.mysql
+import klotio.model
 
 
-class MySQL(klotio.mysql.MySQL):
+class MySQL(klotio.model.MySQL):
     DATABASE = "klotio"
 
 
-class UnitTest(klotio.mysql.MySQL.Base):
+class UnitTest(klotio.model.MySQL.Base):
 
     __tablename__ = "unittest"
 
@@ -71,7 +71,7 @@ class TestMySQL(unittest.TestCase):
 
     def test_MySQL(self):
 
-        self.assertEqual(str(self.session.get_bind().url), "mysql+pymysql://root@mysql-klotio:3306/klotio")
+        self.assertEqual(str(self.session.get_bind().url), "mysql+pymysql://root@klotio-app-mysql:3306/klotio")
 
     def test_UnitTest(self):
 
