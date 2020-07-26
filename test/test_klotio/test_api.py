@@ -2,8 +2,7 @@ import unittest
 import unittest.mock
 import klotio.unittest
 
-import test_klotio.test_mysql
-
+import test_klotio.test_model
 import os
 import json
 import yaml
@@ -13,19 +12,19 @@ import flask_restful
 import opengui
 import sqlalchemy.exc
 
-import klotio.service
+import klotio.api
 
 
-class Group(klotio.service.Group):
+class Group(klotio.api.Group):
     APP = "unittest.klot.io"
 
 
-class UnitTest(klotio.service.Model):
+class UnitTest(klotio.api.Model):
 
     SINGULAR = "unittest"
     PLURAL = "unittests"
-    MODEL = test_klotio.test_mysql.UnitTest
-    ORDER = [test_klotio.test_mysql.UnitTest.name]
+    MODEL = test_klotio.test_model.UnitTest
+    ORDER = [test_klotio.test_model.UnitTest.name]
 
     FIELDS = [
         {
@@ -33,10 +32,10 @@ class UnitTest(klotio.service.Model):
         }
     ]
 
-class UnitTestCL(UnitTest, klotio.service.RestCL):
+class UnitTestCL(UnitTest, klotio.api.RestCL):
     pass
 
-class UnitTestRUD(UnitTest, klotio.service.RestRUD):
+class UnitTestRUD(UnitTest, klotio.api.RestRUD):
     pass
 
 
@@ -47,14 +46,14 @@ class TestRest(klotio.unittest.TestCase):
 
         cls.app = flask.Flask("klot-io-api")
 
-        cls.app.mysql = test_klotio.test_mysql.MySQL()
+        cls.app.mysql = test_klotio.test_model.MySQL()
 
         cls.app.redis = klotio.unittest.MockRedis("redis.com", 567)
         cls.app.channel = "zee"
 
         api = flask_restful.Api(cls.app)
 
-        api.add_resource(klotio.service.Health, '/health')
+        api.add_resource(klotio.api.Health, '/health')
         api.add_resource(Group, '/group')
         api.add_resource(UnitTestCL, '/unittest')
         api.add_resource(UnitTestRUD, '/unittest/<int:id>')
@@ -67,7 +66,7 @@ class TestRest(klotio.unittest.TestCase):
         self.app.mysql.create_database()
 
         self.session = self.app.mysql.session()
-        self.sample = test_klotio.test_mysql.Sample(self.session)
+        self.sample = test_klotio.test_model.Sample(self.session)
 
         self.app.mysql.Base.metadata.create_all(self.app.mysql.engine)
 
@@ -77,14 +76,14 @@ class TestRest(klotio.unittest.TestCase):
         self.app.mysql.drop_database()
 
 
-class TestService(TestRest):
+class TestAPI(TestRest):
 
     def test_require_session(self):
 
         mock_session = unittest.mock.MagicMock()
         self.app.mysql.session = unittest.mock.MagicMock(return_value=mock_session)
 
-        @klotio.service.require_session
+        @klotio.api.require_session
         def good():
             response = flask.make_response(json.dumps({"message": "yep"}))
             response.headers.set('Content-Type', 'application/json')
@@ -98,7 +97,7 @@ class TestService(TestRest):
         self.assertEqual(response.json["message"], "yep")
         mock_session.close.assert_called_once_with()
 
-        @klotio.service.require_session
+        @klotio.api.require_session
         def bad():
             raise sqlalchemy.exc.InvalidRequestError("nope")
 
@@ -113,7 +112,7 @@ class TestService(TestRest):
             unittest.mock.call()
         ])
 
-        @klotio.service.require_session
+        @klotio.api.require_session
         def ugly():
             raise Exception("whoops")
 
@@ -140,7 +139,7 @@ class TestService(TestRest):
                 "style": "textarea"
             }
         ])
-        self.assertFalse(klotio.service.validate(fields))
+        self.assertFalse(klotio.api.validate(fields))
         self.assertFields(fields, [
             {
                 "name": "name",
@@ -163,7 +162,7 @@ class TestService(TestRest):
                 "value": "a: 1"
             }
         ])
-        self.assertFalse(klotio.service.validate(fields))
+        self.assertFalse(klotio.api.validate(fields))
         self.assertFields(fields, [
             {
                 "name": "name",
@@ -187,7 +186,7 @@ class TestService(TestRest):
                 "value": "a:1"
             }
         ])
-        self.assertFalse(klotio.service.validate(fields))
+        self.assertFalse(klotio.api.validate(fields))
         self.assertFields(fields, [
             {
                 "name": "name",
@@ -212,7 +211,7 @@ class TestService(TestRest):
                 "value": "a: 1"
             }
         ])
-        self.assertTrue(klotio.service.validate(fields))
+        self.assertTrue(klotio.api.validate(fields))
         self.assertFields(fields, [
             {
                 "name": "name",
@@ -225,15 +224,18 @@ class TestService(TestRest):
             }
         ])
 
-    @unittest.mock.patch("flask.current_app")
-    def test_notify(self, mock_request):
+    def test_notify(self):
 
-        mock_request.redis = self.app.redis
-        mock_request.channel = "things"
+        def notify():
+            klotio.api.notify({"a": 1})
+            response = flask.make_response(json.dumps({"notify": True}))
+            response.headers.set('Content-Type', 'application/json')
+            response.status_code = 200
+            return response
 
-        klotio.service.notify({"a": 1})
+        self.app.add_url_rule('/notify', 'notify', notify)
 
-        self.assertEqual(self.app.redis.channel, "things")
+        self.assertStatusValue(self.api.get("/notify"), 200, "notify", True)
         self.assertEqual(self.app.redis.messages, ['{"a": 1}'])
 
 
@@ -297,29 +299,39 @@ class TestModel(TestRest):
             }
         ])
 
-    @unittest.mock.patch("flask.request")
-    def test_retrieve(self, mock_request):
+    def test_retrieve(self):
 
-        mock_request.session.query.return_value.get.return_value = "yep"
+        unit = self.sample.unittest("unit")
 
-        self.assertEqual(UnitTest.retrieve(1), "yep")
+        @klotio.api.require_session
+        def retrieve():
+            response = flask.make_response(json.dumps({"retrieve": UnitTest.retrieve(unit.id).name}))
+            response.headers.set('Content-Type', 'application/json')
+            response.status_code = 200
+            return response
 
-        mock_request.session.query.assert_called_once_with(test_klotio.test_mysql.UnitTest)
-        mock_request.session.query.return_value.get.assert_called_once_with(1)
-        mock_request.session.commit.assert_called_once_with()
+        self.app.add_url_rule('/retrieve', 'retrieve', retrieve)
 
-    @unittest.mock.patch("flask.request")
-    def test_choices(self, mock_request):
+        self.assertStatusValue(self.api.get("/retrieve"), 200, "retrieve", "unit")
 
-        mock_request.session = self.session
+    def test_choices(self):
 
         unit = self.sample.unittest("unit")
         test = self.sample.unittest("test")
 
-        (ids, labels) = UnitTest.choices()
+        @klotio.api.require_session
+        def choices():
+            response = flask.make_response(json.dumps({"choices": UnitTest.choices()}))
+            response.headers.set('Content-Type', 'application/json')
+            response.status_code = 200
+            return response
 
-        self.assertEqual(ids, [test.id, unit.id])
-        self.assertEqual(labels, {test.id: "test", unit.id: "unit"})
+        self.app.add_url_rule('/choices', 'choices', choices)
+
+        self.assertStatusValue(self.api.get("/choices"), 200, "choices", [
+            [test.id, unit.id],
+            {str(test.id): "test", str(unit.id): "unit"}
+        ])
 
     @unittest.mock.patch.dict(os.environ, {
         "NODE_NAME": "barry"
@@ -409,7 +421,7 @@ class TestModel(TestRest):
         })
 
     @unittest.mock.patch("glob.glob")
-    @unittest.mock.patch("klotio.service.open", create=True)
+    @unittest.mock.patch("klotio.api.open", create=True)
     @unittest.mock.patch.dict(os.environ, {
         "NODE_NAME": "barry"
     })
@@ -489,7 +501,7 @@ class TestModel(TestRest):
         mock_open.assert_called_once_with("/opt/service/config/integration_unit.test_unittest.fields.yaml", "r")
 
     @unittest.mock.patch("glob.glob")
-    @unittest.mock.patch("klotio.service.open", create=True)
+    @unittest.mock.patch("klotio.api.open", create=True)
     def test_request(self, mock_open, mock_glob):
 
         mock_glob.return_value = ["/opt/service/config/integration_unit.test_unittest.fields.yaml"]
@@ -520,7 +532,7 @@ class TestModel(TestRest):
         })
 
     @unittest.mock.patch("glob.glob")
-    @unittest.mock.patch("klotio.service.open", create=True)
+    @unittest.mock.patch("klotio.api.open", create=True)
     def test_response(self, mock_open, mock_glob):
 
         mock_glob.return_value = ["/opt/service/config/integration_unit.test_unittest.fields.yaml"]
@@ -557,7 +569,7 @@ class TestModel(TestRest):
         })
 
     @unittest.mock.patch("glob.glob")
-    @unittest.mock.patch("klotio.service.open", create=True)
+    @unittest.mock.patch("klotio.api.open", create=True)
     def test_responses(self, mock_open, mock_glob):
 
         mock_glob.return_value = ["/opt/service/config/integration_unit.test_unittest.fields.yaml"]
@@ -597,7 +609,7 @@ class TestModel(TestRest):
 class TestRestCL(TestRest):
 
     @unittest.mock.patch("glob.glob")
-    @unittest.mock.patch("klotio.service.open", create=True)
+    @unittest.mock.patch("klotio.api.open", create=True)
     def test_fields(self, mock_open, mock_glob):
 
         mock_glob.return_value = ["/opt/service/config/integration_unit.test_unittest.fields.yaml"]
@@ -707,7 +719,7 @@ class TestRestCL(TestRest):
 class TestRestRUD(TestRest):
 
     @unittest.mock.patch("glob.glob")
-    @unittest.mock.patch("klotio.service.open", create=True)
+    @unittest.mock.patch("klotio.api.open", create=True)
     def test_fields(self, mock_open, mock_glob):
 
         mock_glob.return_value = ["/opt/service/config/integration_unit.test_unittest.fields.yaml"]

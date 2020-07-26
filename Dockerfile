@@ -1,4 +1,4 @@
-FROM python:3.6.7-alpine3.7
+FROM klotio/python:0.1
 
 RUN apk add git
 
