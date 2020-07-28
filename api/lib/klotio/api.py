@@ -72,7 +72,7 @@ class Health(flask_restful.Resource):
 
 class Group(flask_restful.Resource):
     def get(self):
-        response = requests.get(f"http://{os.environ['NODE_NAME']}:8083/app/{self.APP}/member")
+        response = requests.get(f"http://api.klot-io/app/{self.APP}/member")
 
         response.raise_for_status()
 
@@ -131,7 +131,7 @@ class Model:
         if "url" in integrate:
             response = requests.options(integrate["url"])
         elif "node" in integrate:
-            response = requests.options(f"http://{os.environ['NODE_NAME']}:8083/node", params=integrate["node"])
+            response = requests.options(f"http://api.klot-io/node", params=integrate["node"])
 
         response.raise_for_status()
 

@@ -248,9 +248,6 @@ class TestHealth(TestRest):
 
 class TestGroup(TestRest):
 
-    @unittest.mock.patch.dict(os.environ, {
-        "NODE_NAME": "barry"
-    })
     @unittest.mock.patch("requests.get")
     def test_get(self, mock_get):
 
@@ -265,7 +262,7 @@ class TestGroup(TestRest):
         }]})
 
         mock_get.assert_has_calls([
-            unittest.mock.call("http://barry:8083/app/unittest.klot.io/member"),
+            unittest.mock.call("http://api.klot-io/app/unittest.klot.io/member"),
             unittest.mock.call().raise_for_status(),
             unittest.mock.call().json()
         ])
@@ -333,9 +330,6 @@ class TestModel(TestRest):
             {str(test.id): "test", str(unit.id): "unit"}
         ])
 
-    @unittest.mock.patch.dict(os.environ, {
-        "NODE_NAME": "barry"
-    })
     @unittest.mock.patch("requests.options")
     def test_derive(self, mock_options):
 
@@ -350,14 +344,11 @@ class TestModel(TestRest):
 
         self.assertEqual(UnitTest.derive({"node": "sure"}), "yep")
         mock_options.assert_has_calls([
-            unittest.mock.call("http://barry:8083/node", params="sure"),
+            unittest.mock.call("http://api.klot-io/node", params="sure"),
             unittest.mock.call().raise_for_status(),
             unittest.mock.call().json()
         ])
 
-    @unittest.mock.patch.dict(os.environ, {
-        "NODE_NAME": "barry"
-    })
     @unittest.mock.patch("requests.options")
     def test_integrate(self, mock_options):
 
@@ -382,7 +373,7 @@ class TestModel(TestRest):
                     ]
                 }
 
-            elif url == "http://barry:8083/node" and params == "yep":
+            elif url == "http://api.klot-io/node" and params == "yep":
 
                 response.json.return_value = {
                     "name": "master"
@@ -422,9 +413,6 @@ class TestModel(TestRest):
 
     @unittest.mock.patch("glob.glob")
     @unittest.mock.patch("klotio.api.open", create=True)
-    @unittest.mock.patch.dict(os.environ, {
-        "NODE_NAME": "barry"
-    })
     @unittest.mock.patch("requests.options")
     def test_integrations(self, mock_options, mock_open, mock_glob):
 
@@ -459,7 +447,7 @@ class TestModel(TestRest):
                     ]
                 }
 
-            elif url == "http://barry:8083/node" and params == "yep":
+            elif url == "http://api.klot-io/node" and params == "yep":
 
                 response.json.return_value = {
                     "name": "master"
