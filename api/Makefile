@@ -1,7 +1,7 @@
 IMAGE=app
 ACCOUNT=klotio
 NETWORK=app.klot.io
-MYSQL=klotio/mysql:0.3
+MYSQL_IMAGE=klotio/mysql:0.3
 MYSQL_HOST=$(ACCOUNT)-$(IMAGE)-mysql
 DEBUG_PORT=5678
 VOLUMES=-v ${PWD}/lib:/opt/klot-io/lib \
@@ -22,7 +22,7 @@ network:
 
 mysql: network
 	-docker rm --force $(MYSQL_HOST)
-	docker run -d --network=$(NETWORK) -h $(MYSQL_HOST) --name=$(MYSQL_HOST) -e MYSQL_ALLOW_EMPTY_PASSWORD='yes' $(MYSQL)
+	docker run -d --network=$(NETWORK) -h $(MYSQL_HOST) --name=$(MYSQL_HOST) -e MYSQL_ALLOW_EMPTY_PASSWORD='yes' $(MYSQL_IMAGE)
 	docker run -it --rm --network=$(NETWORK) $(VOLUMES) $(ENVIRONMENT) $(ACCOUNT)/$(IMAGE) sh -c "./mysql.sh"
 
 shell: mysql
