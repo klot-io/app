@@ -12,7 +12,7 @@ ENVIRONMENT=-e MYSQL_HOST=$(MYSQL_HOST) \
 			-e PYTHONDONTWRITEBYTECODE=1 \
 			-e PYTHONUNBUFFERED=1
 
-.PHONY: build netowrk mysql shell debug test
+.PHONY: build network mysql shell debug test
 
 build:
 	docker build . -t $(ACCOUNT)/$(IMAGE)
