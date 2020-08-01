@@ -4,9 +4,7 @@ DRApp.load = function (name) {
     return $.ajax({url: name + ".html", async: false}).responseText;
 }
 
-$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
-
-});
+$.ajaxPrefilter(function(options, originalOptions, jqXHR) {});
 
 DRApp.group = $.ajax({url: "/api/group", async: false}).responseJSON.group;
 
@@ -143,13 +141,13 @@ DRApp.controller("Base",null,{
 // Service
 
 DRApp.partial("Header",DRApp.load("header"));
-DRApp.partial("Form",DRApp.load("klotio/form"));
+DRApp.partial("Form",DRApp.load("form"));
 DRApp.partial("Footer",DRApp.load("footer"));
 
 DRApp.template("Home",DRApp.load("home"),null,DRApp.partials);
-DRApp.template("Fields",DRApp.load("klotio/fields"),null,DRApp.partials);
-DRApp.template("Create",DRApp.load("klotio/create"),null,DRApp.partials);
-DRApp.template("Retrieve",DRApp.load("klotio/retrieve"),null,DRApp.partials);
-DRApp.template("Update",DRApp.load("klotio/update"),null,DRApp.partials);
+DRApp.template("Fields",DRApp.load("fields"),null,DRApp.partials);
+DRApp.template("Create",DRApp.load("create"),null,DRApp.partials);
+DRApp.template("Retrieve",DRApp.load("retrieve"),null,DRApp.partials);
+DRApp.template("Update",DRApp.load("update"),null,DRApp.partials);
 
 DRApp.route("home","/","Home","Base","home");
