@@ -5,7 +5,7 @@ setup(
     name="klotio-app",
     version="0.3",
     package_dir = {'': 'api/lib'},
-    py_modules = ['klotio', 'klotio.model', 'klotio.api', 'klotio.unittest'],
+    py_modules = ['klotio', 'klotio.models', 'klotio.service', 'klotio.unittest'],
     install_requires=[
         'PyYAML==5.3.1',
         'requests==2.24.0',

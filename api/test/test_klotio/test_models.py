@@ -5,14 +5,14 @@ import sqlalchemy
 import sqlalchemy.ext.mutable
 import sqlalchemy_jsonfield
 
-import klotio.model
+import klotio.models
 
 
-class MySQL(klotio.model.MySQL):
+class MySQL(klotio.models.MySQL):
     DATABASE = "klotio"
 
 
-class UnitTest(klotio.model.MySQL.Base):
+class UnitTest(klotio.models.MySQL.Base):
 
     __tablename__ = "unittest"
 
